@@ -10,26 +10,23 @@
         private static $currentGroupMiddlewares = [];
 
         /**
-         * Adiciona uma nova rota à coleção de rotas da aplicação.
+         * Adiciona uma rota à lista de rotas da aplicação.
          *
-         * Este método estático registra uma nova rota, associando um método HTTP,
-         * um caminho URL, um handler (controller e action), e middlewares opcionais.
-         * O caminho da rota é normalizado, garantindo que comece com uma barra '/',
-         * e incorpora qualquer prefixo de grupo de rotas e remove barras redundantes.
-         * Os middlewares da rota são combinados com quaisquer middlewares definidos
-         * para o grupo de rotas atual. A rota registrada é armazenada no array estático
-         * `$routes` da classe.
+         * Este método estático armazena informações sobre uma rota (método HTTP,
+         * caminho, controlador, ação e middlewares) em um array interno `$routes`
+         * para posterior processamento pelo roteador.
          *
-         * @param string $method O método HTTP da rota (e.g., 'GET', 'POST', 'PUT', 'DELETE').
-         * @param string $path O caminho da URL da rota (e.g., '/users', '/products/{id}').
-         * @param array $handler Um array contendo o nome da classe do controller no índice 0
-         * e o nome do método da action no índice 1 (e.g., ['UserController', 'index']).
-         * @param array $middlewares Um array opcional de middlewares a serem aplicados
-         * a esta rota específica (e.g., ['AuthMiddleware', 'AdminMiddleware']).
+         * @param string $method      O método HTTP da rota (ex: 'GET', 'POST', 'PUT', 'DELETE').
+         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos/:id').
+         * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
+         *                             que devem ser executados quando a rota for
+         *                             corresponder (ex: ['UsuarioController', 'index']).
+         * @param array  $middlewares Um array opcional contendo os nomes dos middlewares que
+         *                             devem ser executados antes do handler da rota.
          *
          * @return void
          */
-        private static function addRoute(string $method, string $path, array $handler, array $middlewares = []): void {
+        public static function addRoute(string $method, string $path, array $handler, array $middlewares = []): void {
             self::$routes[] = [
                 'method' => strtoupper(string: $method),
                 'path' => '/' . trim(string: self::$currentGroupPrefix . '/' . trim(string: $path, characters: '/'), characters: '/'),
@@ -188,27 +185,21 @@
         }
 
         /**
-         * Processa os dados de requisições HTTP dos métodos PUT e DELETE.
+         * Processa dados de requisição PUT.
          *
-         * Este método estático lê o corpo da requisição HTTP para os métodos PUT e
-         * DELETE. Ele tenta decodificar os dados como JSON se o cabeçalho
-         * 'Content-Type' indicar 'application/json'. Se não for JSON ou ocorrer um
-         * erro na decodificação, ele tenta analisar os dados como uma string de
-         * consulta (form-urlencoded). Para outros métodos HTTP, um array vazio é
-         * retornado. Finalmente, remove qualquer campo chamado '_method' dos dados
-         * processados antes de retorná-los.
+         * Este método estático lê os dados da requisição PUT do `php://input`,
+         * decodifica-os (JSON ou form-urlencoded) e retorna os dados em um array
+         * associativo.
          *
-         * @param string $method O método HTTP da requisição (e.g., 'PUT', 'DELETE').
-         *
-         * @return array Um array associativo contendo os dados processados do corpo
-         * da requisição para PUT e DELETE, ou um array vazio para outros métodos.
-         * @throws Exception Se ocorrer um erro ao decodificar os dados JSON.
+         * @return array Os dados da requisição PUT processados. Retorna um array
+         *               vazio se não houver dados ou se a requisição não for PUT.
+         * @throws Exception Se houver um erro ao decodificar JSON.
          */
-        private static function processPutAndDeleteRequest(string $method): array {
+        private static function processPutDeleteRequest(string $method): array {
             $inputData = file_get_contents(filename: 'php://input');
             $data = [];
         
-            if (($method === 'PUT') || ($method === 'DELETE')) {
+            if ($method === 'PUT' || $method === 'DELETE') {
                 if (!empty($inputData)) {
                     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
                     if (strpos(haystack: $contentType, needle: 'application/json') !== false) {
@@ -343,8 +334,8 @@
         
             // Processa os dados de PUT e DELETE
             $requestData = match($method) {
-                'PUT' => self::processPutAndDeleteRequest(method: $method),
-                'DELETE' => self::processPutAndDeleteRequest(method: $method),
+                'PUT' => self::processPutDeleteRequest(method: $method),
+                'DELETE' => self::processPutDeleteRequest(method: $method),
                 default => null
             };
         
@@ -375,13 +366,11 @@
         }
 
         /**
-         * Envia um código de resposta HTTP 404 (Não Encontrado) para o cliente
-         * e encerra a execução do script.
+         * Exibe a página de erro 404 (Página não encontrada).
          *
-         * Este método estático é utilizado para indicar que a página ou recurso
-         * solicitado não foi encontrado no servidor. Ele define o código de resposta
-         * HTTP para 404 e, em seguida, interrompe imediatamente a execução do script
-         * para evitar qualquer processamento adicional.
+         * Este método estático define o código de resposta HTTP como 404 e renderiza
+         * a view "/Errors/404" para exibir a página de erro. Após a renderização,
+         * o script é encerrado.
          *
          * @return void
          */
