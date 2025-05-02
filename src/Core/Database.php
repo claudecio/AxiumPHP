@@ -58,7 +58,7 @@
         public static function fetchAll(string $sql, array $params = [], string $connectionName = 'default'): array {
             $stmt = self::prepare(sql: $sql, connectionName: $connectionName);
             $stmt->execute(params: $params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(mode: PDO::FETCH_ASSOC);
         }
 
         public static function lastInsertId(string $connectionName = 'default'): string {

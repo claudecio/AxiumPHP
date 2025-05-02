@@ -31,7 +31,7 @@
         private function checkRequiredConstants(): void {
             foreach ($this->requiredConstants as $constant) {
                 if (!defined(constant_name: $constant)) {
-                    throw new Exception(message: "A constante '{$constant}' não está definida.");
+                    throw new Exception(message: "Constante '{$constant}' não definida.");
                 }
             }
         }

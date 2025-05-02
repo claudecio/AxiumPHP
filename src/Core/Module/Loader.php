@@ -13,10 +13,10 @@
          *
          * Inicializa o objeto com o caminho do arquivo de configuração e carrega as configurações.
          *
-         * @param string $configFilePath O caminho do arquivo de configuração (opcional).
+         * @param string $configFileName O caminho do arquivo de configuração (opcional).
          */
-        public function __construct(?string $configFilePath = "/../../system-ini.json") {
-            $this->configFilePath = realpath(path: INI_SYSTEM_PATH . "{$configFilePath}/system-ini.json");
+        public function __construct(?string $configFileName = "system-ini.json") {
+            $this->configFilePath = realpath(path: INI_SYSTEM_PATH . "{$configFileName}");
             $this->loadConfig();
         }
 
@@ -53,6 +53,28 @@
          */
         public function loadEssentialModules():void {
             $this->startModule(modules: $this->configData["Modules"]["essentials"]);
+        }
+
+        /**
+         * Carrega e inicializa todos os módulos ativos da aplicação, conforme
+         * definido na configuração.
+         *
+         * Este método acessa a propriedade `$configData`, especificamente a seção
+         * ["Modules"]["active"], que se espera ser um array contendo os
+         * identificadores (nomes ou objetos) dos módulos que devem ser carregados
+         * e inicializados. Em seguida, chama o método `startModule`, passando este
+         * array de módulos ativos para iniciar o processo de carregamento e
+         * inicialização de cada um deles.
+         *
+         * @return void
+         *
+         * @see startModule()
+         * @property array $configData Propriedade da classe que contém os dados de
+         * configuração da aplicação. Espera-se que possua uma chave "Modules" com
+         * uma sub-chave "active" contendo um array de módulos.
+         */
+        public function loadActiveModules():void {
+            $this->startModule(modules: $this->configData["Modules"]["active"]);
         }
 
          /**
@@ -114,7 +136,7 @@
         
                 // Verifica se a versão do módulo é compatível
                 if ($moduleManifest['version'] !== $version) {
-                    throw new Exception(message: "Versão do módulo {$moduleName} incompatível. Versão requerida: {$version}. Versão instalada: {$moduleManifest['version']}");
+                    throw new Exception(message: "Versão do módulo {$moduleName} é incompatível. Versão requerida: {$version}. Versão instalada: {$moduleManifest['version']}");
                 }
         
                 // Verifica dependências do módulo
@@ -130,10 +152,9 @@
                 $moduleSlug = strtolower(string: $moduleManifest['slug']);
                 $moduleRoutesManifest = realpath(path: MODULE_PATH . "{$moduleSlug}/manifest.json");
 
+                // Carrega o arquivo das rotas de um módulo quando existe
                 if ($moduleRoutesManifest && is_file(filename: $moduleRoutesManifest)) {
                     require_once $moduleRoutesManifest;
-                } else {;
-                    throw new Exception(message: "Arquivo de bootstrap do módulo {$moduleName} não encontrado.");
                 }
             }
         }
