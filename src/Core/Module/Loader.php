@@ -116,7 +116,7 @@
         private function startModule(array $modules):void {
             foreach ($modules as $module) {
                 // Identifica o módulo requisitado e sua versão
-                [$moduleName, $version] = explode(separator: '@', string: strtolower(string: $module));
+                [$moduleName, $version] = explode(separator: '@', string: $module);
         
                 // Carrega manifesto do módulo
                 $manifestPath = MODULE_PATH . "/{$moduleName}/manifest.json";
