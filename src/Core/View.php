@@ -23,11 +23,11 @@
          * @return void
          */
         public static function render(string $view, array $data = [], ?string $layout = null, ?string $module = null): void {
-            $viewPath = VIEW_PATH . "{$view}.php";
+            $viewPath = VIEW_PATH . "/{$view}.php";
         
             // Verifica se o módulo foi passado e se ele possui a view
             if ($module) {
-                $moduleViewPath = MODULE_PATH . "{$module}/Views/{$view}.php";
+                $moduleViewPath = MODULE_PATH . "/{$module}/Views/{$view}.php";
                 if (file_exists(filename: $moduleViewPath)) {
                     $viewPath = $moduleViewPath;
                 }
@@ -50,7 +50,7 @@
         
             // Verifica se um layout foi passado
             if ($layout && $module) {
-                $layoutPath = MODULE_PATH . "{$module}/Views/{$layout}.php";
+                $layoutPath = MODULE_PATH . "/$module}/Views/{$layout}.php";
                 if (file_exists(filename: $layoutPath)) {
                     require_once $layoutPath; // Inclui o layout
                 } else {
@@ -58,7 +58,7 @@
                     die("Layout '{$layout}' não encontrado.");
                 }
             } elseif($layout) {
-                $layoutPath = VIEW_PATH . "{$layout}.php";
+                $layoutPath = VIEW_PATH . "/{$layout}.php";
                 if (file_exists(filename: $layoutPath)) {
                     require_once $layoutPath; // Inclui o layout
                 } else {

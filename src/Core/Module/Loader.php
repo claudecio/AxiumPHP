@@ -16,7 +16,7 @@
          * @param string $configFileName O caminho do arquivo de configuração (opcional).
          */
         public function __construct(?string $configFileName = "system-ini.json") {
-            $this->configFilePath = INI_SYSTEM_PATH . "{$configFileName}";
+            $this->configFilePath = INI_SYSTEM_PATH . "/{$configFileName}";
             $this->loadConfig();
         }
 
@@ -119,7 +119,7 @@
                 [$moduleName, $version] = explode(separator: '@', string: strtolower(string: $module));
         
                 // Carrega manifesto do módulo
-                $manifestPath = MODULE_PATH . "{$moduleName}/manifest.json";
+                $manifestPath = MODULE_PATH . "/{$moduleName}/manifest.json";
                 if (!file_exists(filename: $manifestPath)) {
                     throw new Exception(message: "Manifesto do módulo {$moduleName} não encontrado.");
                 }
@@ -150,7 +150,7 @@
         
                 // Carrega o manifesto do módulo
                 $moduleSlug = strtolower(string: $moduleManifest['slug']);
-                $moduleRoutesManifest = MODULE_PATH . "{$moduleSlug}/manifest.json";
+                $moduleRoutesManifest = MODULE_PATH . "/{$moduleSlug}/manifest.json";
 
                 // Carrega o arquivo das rotas de um módulo quando existe
                 if ($moduleRoutesManifest && is_file(filename: $moduleRoutesManifest)) {

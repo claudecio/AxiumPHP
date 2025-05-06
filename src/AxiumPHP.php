@@ -18,9 +18,6 @@
         public function __construct() {
             // Verificar as constantes no momento da criação da instância
             $this->checkRequiredConstants();
-    
-            // Qualquer outra inicialização do AxiumPHP pode ser feita aqui
-            echo "AxiumPHP inicializado com sucesso!";
         }
     
         /**
