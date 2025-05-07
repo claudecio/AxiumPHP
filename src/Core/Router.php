@@ -376,6 +376,9 @@
          */
         private static function pageNotFound(): void {
             http_response_code(response_code: 404);
+            if(defined(constant_name: ERROR_404_VIEW_PATH)) {
+                require_once ERROR_404_VIEW_PATH;
+            }
             exit;
         }
     }
