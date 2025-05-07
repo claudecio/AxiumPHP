@@ -376,8 +376,12 @@
          */
         private static function pageNotFound(): void {
             http_response_code(response_code: 404);
-            if(defined(constant_name: ERROR_404_VIEW_PATH)) {
-                require_once ERROR_404_VIEW_PATH;
+            if(defined(constant_name: 'ERROR_404_VIEW_PATH')) {
+                if(file_exists(filename: ERROR_404_VIEW_PATH)) {
+                    require_once ERROR_404_VIEW_PATH;
+                } else {
+                    throw new Exception(message: "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.");
+                }
             }
             exit;
         }
