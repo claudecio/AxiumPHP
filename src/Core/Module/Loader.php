@@ -98,6 +98,37 @@
         }
 
         /**
+         * Busca o nome real de uma subpasta dentro de um diretório base,
+         * ignorando a diferença entre maiúsculas e minúsculas.
+         *
+         * Este método privado recebe um `$basePath` (o diretório onde procurar)
+         * e um `$targetName` (o nome da pasta desejada). Primeiro, verifica se o
+         * `$basePath` é um diretório válido. Se não for, retorna null. Em seguida,
+         * lê todos os arquivos e pastas dentro do `$basePath`. Para cada entrada,
+         * compara o nome da entrada com o `$targetName` de forma case-insensitive.
+         * Se encontrar uma entrada que corresponda ao `$targetName` (ignorando o case)
+         * e que seja um diretório, retorna o nome da entrada com o seu case real.
+         * Se após verificar todas as entradas nenhuma pasta correspondente for
+         * encontrada, retorna null.
+         *
+         * @param string $basePath O caminho para o diretório base onde a subpasta será procurada.
+         * @param string $targetName O nome da subpasta a ser encontrada (a comparação é case-insensitive).
+         * @return string|null O nome real da pasta (com o case correto) se encontrada, ou null caso contrário.
+         */
+        private function getRealFolderName(string $basePath, string $targetName): ?string {
+            if (!is_dir(filename: $basePath)) return null;
+        
+            $entries = scandir(directory: $basePath);
+            foreach ($entries as $entry) {
+                if (strcasecmp(string1: $entry, string2: $targetName) === 0 && is_dir(filename: $basePath . '/' . $entry)) {
+                    return $entry; // Nome com o case real
+                }
+            }
+        
+            return null;
+        }        
+
+        /**
          * Inicia os módulos especificados.
          *
          * Este método itera sobre a lista de módulos fornecida, carrega seus manifestos,
@@ -113,48 +144,56 @@
          *
          * @return void
          */
-        private function startModule(array $modules):void {
+        private function startModule(array $modules): void {
             foreach ($modules as $module) {
                 // Identifica o módulo requisitado e sua versão
                 [$moduleName, $version] = explode(separator: '@', string: $module);
         
-                // Carrega manifesto do módulo
-                $manifestPath = MODULE_PATH . "/{$moduleName}/manifest.json";
+                // Pega o nome real da pasta do módulo
+                $realModuleFolder = $this->getRealFolderName(basePath: MODULE_PATH, targetName: $moduleName);
+                if (!$realModuleFolder) {
+                    throw new Exception(message: "Pasta do módulo '{$moduleName}' não encontrada.");
+                }
+        
+                // Caminho do manifesto usando o nome real
+                $manifestPath = MODULE_PATH . "/{$realModuleFolder}/manifest.json";
                 if (!file_exists(filename: $manifestPath)) {
-                    throw new Exception(message: "Manifesto do módulo {$moduleName} não encontrado.");
+                    throw new Exception(message: "Manifesto do módulo '{$moduleName}' não encontrado.");
                 }
         
                 $moduleManifest = json_decode(json: file_get_contents(filename: $manifestPath), associative: true);
                 if (!$moduleManifest) {
-                    throw new Exception(message: "Erro ao decodificar o manifesto do módulo {$moduleName}.");
+                    throw new Exception(message: "Erro ao decodificar o manifesto do módulo '{$moduleName}'.");
                 }
         
-                // Verifica se o módulo já foi carregado
+                // Evita carregar o mesmo módulo mais de uma vez
                 if (in_array(needle: $moduleManifest["uuid"], haystack: $this->startedModules)) {
-                    continue; // Pula o módulo se já foi carregado
+                    continue;
                 }
         
-                // Verifica se a versão do módulo é compatível
+                // Verifica se a versão é compatível
                 if ($moduleManifest['version'] !== $version) {
-                    throw new Exception(message: "Versão do módulo {$moduleName} é incompatível. Versão requerida: {$version}. Versão instalada: {$moduleManifest['version']}");
+                    throw new Exception(message: "Versão do módulo '{$moduleName}' é incompatível. Versão requerida: {$version}. Versão instalada: {$moduleManifest['version']}");
                 }
         
-                // Verifica dependências do módulo
-                if (isset($moduleManifest['dependencies']) && count(value: $moduleManifest['dependencies']) > 0) {
-                    // Carrega as dependências recursivamente
-                    $this->startModule(modules: $moduleManifest['dependencies']);
-                }
-        
-                // Adiciona o módulo à lista de módulos carregados
+                // Marca como carregado
                 $this->startedModules[] = $moduleManifest["uuid"];
         
-                // Carrega o manifesto do módulo
-                $moduleSlug = strtolower(string: $moduleManifest['slug']);
-                $moduleRoutesManifest = MODULE_PATH . "/{$moduleSlug}/manifest.json";
+                // Carrega o manifesto do módulo (de novo) caso precise
+                require_once $manifestPath;
+        
+                // Procura a pasta Routes com o case correto
+                $realRoutesFolder = $this->getRealFolderName(basePath: MODULE_PATH . "/{$realModuleFolder}", targetName: 'Routes');
+                if ($realRoutesFolder) {
+                    $routesFile = MODULE_PATH . "/{$realModuleFolder}/{$realRoutesFolder}/Routes.php";
+                    if (file_exists(filename: $routesFile)) {
+                        require_once $routesFile;
+                    }
+                }
 
-                // Carrega o arquivo das rotas de um módulo quando existe
-                if ($moduleRoutesManifest && is_file(filename: $moduleRoutesManifest)) {
-                    require_once $moduleRoutesManifest;
+                // Carrega dependências, se existirem
+                if (!empty($moduleManifest['dependencies'])) {
+                    $this->startModule(modules: $moduleManifest['dependencies']);
                 }
             }
         }
