@@ -175,13 +175,7 @@
                 if ($moduleManifest['version'] !== $version) {
                     throw new Exception(message: "Versão do módulo '{$moduleName}' é incompatível. Versão requerida: {$version}. Versão instalada: {$moduleManifest['version']}");
                 }
-        
-                // Marca como carregado
-                $this->startedModules[] = $moduleManifest["uuid"];
-        
-                // Carrega o manifesto do módulo (de novo) caso precise
-                require_once $manifestPath;
-        
+                
                 // Procura a pasta Routes com o case correto
                 $realRoutesFolder = $this->getRealFolderName(basePath: MODULE_PATH . "/{$realModuleFolder}", targetName: 'Routes');
                 if ($realRoutesFolder) {
@@ -190,6 +184,9 @@
                         require_once $routesFile;
                     }
                 }
+
+                // Marca como carregado
+                $this->startedModules[] = $moduleManifest["uuid"];
 
                 // Carrega dependências, se existirem
                 if (!empty($moduleManifest['dependencies'])) {
