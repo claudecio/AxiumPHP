@@ -3,6 +3,37 @@
 
     class View {
         /**
+         * Busca o nome real de uma subpasta dentro de um diretório base,
+         * ignorando a diferença entre maiúsculas e minúsculas.
+         *
+         * Este método privado recebe um `$basePath` (o diretório onde procurar)
+         * e um `$targetName` (o nome da pasta desejada). Primeiro, verifica se o
+         * `$basePath` é um diretório válido. Se não for, retorna null. Em seguida,
+         * lê todos os arquivos e pastas dentro do `$basePath`. Para cada entrada,
+         * compara o nome da entrada com o `$targetName` de forma case-insensitive.
+         * Se encontrar uma entrada que corresponda ao `$targetName` (ignorando o case)
+         * e que seja um diretório, retorna o nome da entrada com o seu case real.
+         * Se após verificar todas as entradas nenhuma pasta correspondente for
+         * encontrada, retorna null.
+         *
+         * @param string $basePath O caminho para o diretório base onde a subpasta será procurada.
+         * @param string $targetName O nome da subpasta a ser encontrada (a comparação é case-insensitive).
+         * @return string|null O nome real da pasta (com o case correto) se encontrada, ou null caso contrário.
+         */
+        private static function getRealFolderName(string $basePath, string $targetName): ?string {
+            if (!is_dir(filename: $basePath)) return null;
+        
+            $entries = scandir(directory: $basePath);
+            foreach ($entries as $entry) {
+                if (strcasecmp(string1: $entry, string2: $targetName) === 0 && is_dir(filename: $basePath . '/' . $entry)) {
+                    return $entry; // Nome com o case real
+                }
+            }
+        
+            return null;
+        }  
+
+        /**
          * Renderiza uma view dentro de um layout, com suporte a módulos.
          *
          * Este método estático inclui o arquivo de view especificado, permitindo a
@@ -24,50 +55,58 @@
          */
         public static function render(string $view, array $data = [], ?string $layout = null, ?string $module = null): void {
             $viewPath = VIEW_PATH . "/{$view}.php";
-        
-            // Verifica se o módulo foi passado e se ele possui a view
+    
+            // Se for módulo, resolve o nome da pasta do módulo e da pasta Views
             if ($module) {
-                $moduleViewPath = MODULE_PATH . "/{$module}/Views/{$view}.php";
+                $realModule = self::getRealFolderName(basePath: MODULE_PATH, targetName: $module);
+                if (!$realModule) {
+                    http_response_code(response_code: 404);
+                    die("Módulo '{$module}' não encontrado.");
+                }
+    
+                $realViews = self::getRealFolderName(basePath: MODULE_PATH . "/{$realModule}", targetName: 'Views');
+                if (!$realViews) {
+                    http_response_code(response_code: 404);
+                    die("Pasta 'Views' do módulo '{$module}' não encontrada.");
+                }
+    
+                $moduleViewPath = MODULE_PATH . "/{$realModule}/{$realViews}/{$view}.php";
                 if (file_exists(filename: $moduleViewPath)) {
                     $viewPath = $moduleViewPath;
                 }
             }
-        
+    
             if (!file_exists(filename: $viewPath)) {
                 http_response_code(response_code: 404);
                 die("View '{$view}' não encontrada.");
             }
-        
-            // Extraindo variáveis para uso na view
+    
             if (!empty($data)) {
                 extract($data, EXTR_SKIP);
             }
-        
-            // Inclui a view e armazena o conteúdo em $content
-            ob_start(); // Inicia o buffer de saída
+    
+            ob_start();
             require_once $viewPath;
-            $content = ob_get_clean(); // Obtém o conteúdo do buffer e limpa o buffer
-        
-            // Verifica se um layout foi passado
-            if ($layout && $module) {
-                $layoutPath = MODULE_PATH . "/$module}/Views/{$layout}.php";
-                if (file_exists(filename: $layoutPath)) {
-                    require_once $layoutPath; // Inclui o layout
+            $content = ob_get_clean();
+    
+            if ($layout) {
+                if ($module) {
+                    // Mesmo esquema pra layout dentro de módulo
+                    $realModule = self::getRealFolderName(basePath: MODULE_PATH, targetName: $module);
+                    $realViews = self::getRealFolderName(basePath: MODULE_PATH . "/{$realModule}", targetName: 'Views');
+                    $layoutPath = MODULE_PATH . "/{$realModule}/{$realViews}/{$layout}.php";
                 } else {
-                    http_response_code(response_code: 404);
-                    die("Layout '{$layout}' não encontrado.");
+                    $layoutPath = VIEW_PATH . "/{$layout}.php";
                 }
-            } elseif($layout) {
-                $layoutPath = VIEW_PATH . "/{$layout}.php";
+    
                 if (file_exists(filename: $layoutPath)) {
-                    require_once $layoutPath; // Inclui o layout
+                    require_once $layoutPath;
                 } else {
                     http_response_code(response_code: 404);
                     die("Layout '{$layout}' não encontrado.");
                 }
             } else {
-                // Se não houver layout, exibe apenas o conteúdo
                 echo $content;
             }
-        }        
+        }
     }
