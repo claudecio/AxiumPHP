@@ -1,7 +1,35 @@
 <?php
     namespace AxiumPHP\Core;
 
+    use Exception;
+
     class View {
+        private array $requiredConstants = [
+            'VIEW_PATH',
+        ];
+
+        /**
+         * Construtor que vai garantir que as constantes necessárias estejam definidas antes de
+         * instanciar a view.
+         */
+        public function __construct() {
+            // Verificar as constantes no momento da criação da instância
+            $this->checkRequiredConstants();
+        }
+
+        /**
+         * Verifica se todas as constantes necessárias estão definidas.
+         *
+         * @throws Exception Se alguma constante necessária não estiver definida.
+         */
+        private function checkRequiredConstants(): void {
+            foreach ($this->requiredConstants as $constant) {
+                if (!defined(constant_name: $constant)) {
+                    throw new Exception(message: "Constante '{$constant}' não definida.");
+                }
+            }
+        }
+
         /**
          * Busca o nome real de uma subpasta dentro de um diretório base,
          * ignorando a diferença entre maiúsculas e minúsculas.

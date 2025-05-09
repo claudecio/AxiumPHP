@@ -6,8 +6,6 @@
     class AxiumPHP {
     
         private array $requiredConstants = [
-            'VIEW_PATH',
-            'MODULE_PATH',
             'INI_SYSTEM_PATH',
         ];
     

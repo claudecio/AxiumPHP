@@ -7,6 +7,9 @@
         private $configFilePath;
         private $configData;
         private $startedModules = [];
+        private array $requiredConstants = [
+            'MODULE_PATH',
+        ];
 
         /**
          * Construtor da classe.
@@ -18,6 +21,21 @@
         public function __construct(?string $configFileName = "system-ini.json") {
             $this->configFilePath = INI_SYSTEM_PATH . "/{$configFileName}";
             $this->loadConfig();
+            // Verificar as constantes no momento da criação da instância
+            $this->checkRequiredConstants();
+        }
+
+        /**
+         * Verifica se todas as constantes necessárias estão definidas.
+         *
+         * @throws Exception Se alguma constante necessária não estiver definida.
+         */
+        private function checkRequiredConstants(): void {
+            foreach ($this->requiredConstants as $constant) {
+                if (!defined(constant_name: $constant)) {
+                    throw new Exception(message: "Constante '{$constant}' não definida.");
+                }
+            }
         }
 
         /**
