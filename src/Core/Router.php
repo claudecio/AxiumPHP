@@ -8,6 +8,31 @@
         private static $params = [];    
         private static $currentGroupPrefix = '';
         private static $currentGroupMiddlewares = [];
+        private array $requiredConstants = [
+            'ROUTER_ERROR_404_MODE',
+        ];
+
+        /**
+         * Construtor que vai garantir que as constantes necessárias estejam definidas antes de
+         * instanciar a view.
+         */
+        public function __construct() {
+            // Verificar as constantes no momento da criação da instância
+            $this->checkRequiredConstants();
+        }
+
+        /**
+         * Verifica se todas as constantes necessárias estão definidas.
+         *
+         * @throws Exception Se alguma constante necessária não estiver definida.
+         */
+        private function checkRequiredConstants(): void {
+            foreach ($this->requiredConstants as $constant) {
+                if (!defined(constant_name: $constant)) {
+                    throw new Exception(message: "Constante '{$constant}' não definida.");
+                }
+            }
+        }
 
         /**
          * Adiciona uma rota à lista de rotas da aplicação.
@@ -376,13 +401,27 @@
          */
         private static function pageNotFound(): void {
             http_response_code(response_code: 404);
-            if(defined(constant_name: 'ERROR_404_VIEW_PATH')) {
-                if(file_exists(filename: ERROR_404_VIEW_PATH)) {
-                    require_once ERROR_404_VIEW_PATH;
-                } else {
-                    throw new Exception(message: "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.");
-                }
+
+
+            switch (ROUTER_ERROR_404_MODE) {
+                case 'view':
+                    if(defined(constant_name: 'ERROR_404_VIEW_PATH')) {
+                        if(file_exists(filename: ERROR_404_VIEW_PATH)) {
+                            require_once ERROR_404_VIEW_PATH;
+                        } else {
+                            throw new Exception(message: "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.");
+                        }
+                    }
+                break;
+
+                case 'json':
+                    header(header: 'Content-Type: application/json, charset=utf-8');
+                    echo json_encode( value: [
+                        "success" => false,
+                        "message" => "Página não encontrada.",
+                        "code" => 404
+                    ]);
+                break;
             }
-            exit;
         }
     }
