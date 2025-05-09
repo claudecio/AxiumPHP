@@ -405,6 +405,7 @@
 
             switch (ROUTER_ERROR_404_MODE) {
                 case 'view':
+                    http_response_code(response_code: 404);
                     if(defined(constant_name: 'ERROR_404_VIEW_PATH')) {
                         if(file_exists(filename: ERROR_404_VIEW_PATH)) {
                             require_once ERROR_404_VIEW_PATH;
@@ -415,6 +416,7 @@
                 break;
 
                 case 'json':
+                    http_response_code(response_code: 404);
                     header(header: 'Content-Type: application/json, charset=utf-8');
                     echo json_encode( value: [
                         "success" => false,
