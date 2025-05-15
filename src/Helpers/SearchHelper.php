@@ -2,6 +2,39 @@
     namespace AxiumPHP\Helpers;
 
     class SearchHelper {
+        
+        /**
+         * Retorna os dados de entrada (GET, POST, COOKIE ou SERVER) filtrados.
+         *
+         * Permite passar filtros personalizados por campo. Se nenhum filtro for passado,
+         * usa o filtro padrão (`FILTER_DEFAULT`).
+         *
+         * @param int $form_type Tipo de entrada (INPUT_GET, INPUT_POST, INPUT_COOKIE ou INPUT_SERVER).
+         * @param array|null $filters Filtros personalizados no formato aceito por filter_input_array().
+         * @return array Retorna um array associativo com os dados filtrados, ou array vazio se nenhum dado for encontrado.
+         */
+        public static function getFilteredInput(int $form_type = INPUT_GET, ?array $filters = null): array {
+            switch ($form_type) {
+                case INPUT_GET:
+                    $form = filter_input_array(type: INPUT_GET, options: $filters);
+                    unset($form['url']);
+                    break;
+                case INPUT_POST:
+                    $form = filter_input_array(type: INPUT_POST, options: $filters);
+                    break;
+                case INPUT_COOKIE:
+                    $form = filter_input_array(type: INPUT_COOKIE, options: $filters);
+                    break;
+                case INPUT_SERVER:
+                    $form = filter_input_array(type: INPUT_SERVER, options: $filters);
+                    break;
+                default:
+                    $form = filter_input_array(type: INPUT_GET, options: $filters);
+            }
+
+            return is_array(value: $form) ? $form : [];
+        }
+
         /**
          * Calcula o valor de OFFSET para consultas de paginação SQL.
          *
