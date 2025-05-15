@@ -16,23 +16,23 @@
         public static function getFilteredInput(int $form_type = INPUT_GET, ?array $filters = null): array {
             switch ($form_type) {
                 case INPUT_GET:
-                    $form = filter_input_array(type: INPUT_GET, options: $filters);
+                    $form = $filters !== null ? filter_input_array(type: INPUT_GET, options: $filters) : filter_input_array(type: INPUT_GET);
                     unset($form['url']);
                     break;
                 case INPUT_POST:
-                    $form = filter_input_array(type: INPUT_POST, options: $filters);
+                    $form = $filters !== null ? filter_input_array(type: INPUT_POST, options: $filters) : filter_input_array(type: INPUT_POST);
                     break;
                 case INPUT_COOKIE:
-                    $form = filter_input_array(type: INPUT_COOKIE, options: $filters);
+                    $form = $filters !== null ? filter_input_array(type: INPUT_COOKIE, options: $filters) : filter_input_array(type: INPUT_COOKIE);
                     break;
                 case INPUT_SERVER:
-                    $form = filter_input_array(type: INPUT_SERVER, options: $filters);
+                    $form = $filters !== null ? filter_input_array(type: INPUT_SERVER, options: $filters) : filter_input_array(type: INPUT_SERVER);
                     break;
                 default:
-                    $form = filter_input_array(type: INPUT_GET, options: $filters);
+                    $form = $filters !== null ? filter_input_array(type: INPUT_GET, options: $filters) : filter_input_array(type: INPUT_GET);
             }
 
-            return is_array(value: $form) ? $form : [];
+            return $form && is_array(value: $form) ? $form : [];
         }
 
         /**
