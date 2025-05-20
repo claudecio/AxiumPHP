@@ -2,6 +2,7 @@
     namespace AxiumPHP\Core;
 
     use Dotenv\Dotenv;
+    use RuntimeException;
 
     class EnvLoader {
         /**
@@ -22,7 +23,7 @@
          */
         public static function load(string $path): void {
             if(!file_exists(filename: $path)) {
-                die("Arquivo '.env' não encontrado.");
+                throw new RuntimeException(message: "Arquivo '.env' não encontrado.");
             }
 
             $dotenv = Dotenv::createImmutable(paths: $path);
