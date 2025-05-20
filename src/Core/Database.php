@@ -50,6 +50,8 @@
          * @return void
          */
         public static function disconnect(string $connectionName = 'default'): void {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             self::$connections[$connectionName] = null;
         }
 
@@ -66,6 +68,8 @@
          * @return PDO A instância PDO da conexão solicitada.
          */
         public static function getConnection(string $connectionName = 'default'): PDO {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             self::connect(connectionName: $connectionName);
             return self::$connections[$connectionName];
         }
@@ -84,6 +88,8 @@
          * @return PDOStatement O objeto PDOStatement resultante da preparação da query.
          */
         public static function prepare(string $sql, string $connectionName = 'default'): PDOStatement {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             return self::getConnection(connectionName: $connectionName)->prepare(query: $sql);
         }
 
@@ -103,6 +109,8 @@
          * @return bool Retorna true se a execução da query foi bem-sucedida, false caso contrário.
          */
         public static function execute(string $sql, array $params = [], string $connectionName = 'default'): bool {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $stmt = self::prepare(sql: $sql, connectionName: $connectionName);
             return $stmt->execute(params: $params);
         }
@@ -125,6 +133,8 @@
          * ou null se não houver resultados.
          */
         public static function fetchOne(string $sql, array $params = [], string $connectionName = 'default'): ?array {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $stmt = self::prepare(sql: $sql, connectionName: $connectionName);
             $stmt->execute(params: $params);
             $result = $stmt->fetch(mode: PDO::FETCH_ASSOC);
@@ -150,6 +160,8 @@
          * do resultado. Retorna um array vazio se não houver resultados.
          */
         public static function fetchAll(string $sql, array $params = [], string $connectionName = 'default'): array {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $stmt = self::prepare(sql: $sql, connectionName: $connectionName);
             $stmt->execute(params: $params);
             return $stmt->fetchAll(mode: PDO::FETCH_ASSOC);
@@ -167,6 +179,8 @@
          * @return string O ID da última linha inserida como uma string.
          */
         public static function lastInsertId(string $connectionName = 'default'): string {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             return self::getConnection(connectionName: $connectionName)->lastInsertId();
         }
 
@@ -183,6 +197,8 @@
          * @return void
          */
         public static function beginTransaction(string $connectionName = 'default'): void {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $conn = self::getConnection(connectionName: $connectionName);
             if (!$conn->inTransaction()) {
                 $conn->beginTransaction();
@@ -202,6 +218,8 @@
          * @return void
          */
         public static function commit(string $connectionName = 'default'): void {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $conn = self::getConnection(connectionName: $connectionName);
             if ($conn->inTransaction()) {
                 $conn->commit();
@@ -221,6 +239,8 @@
          * @return void
          */
         public static function rollback(string $connectionName = 'default'): void {
+            // Transforma o nome da conexão em maiúsculo
+            $connectionName = strtoupper(string: $connectionName);
             $conn = self::getConnection(connectionName: $connectionName);
             if ($conn->inTransaction()) {
                 $conn->rollBack();
