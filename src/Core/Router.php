@@ -9,7 +9,7 @@
         private static $currentGroupPrefix = '';
         private static $currentGroupMiddlewares = [];
         private array $requiredConstants = [
-            'ROUTER_ERROR_404_MODE',
+            'ROUTER_MODE'
         ];
 
         /**
@@ -29,7 +29,13 @@
         private function checkRequiredConstants(): void {
             foreach ($this->requiredConstants as $constant) {
                 if (!defined(constant_name: $constant)) {
-                    throw new Exception(message: "Constante '{$constant}' não definida.");
+                    http_response_code(response_code: 500);
+                    header(header: "Content-Type: application/json, charset=utf-8");
+                    echo json_encode(value: [
+                        "success" => false,
+                        "message" => "Constante '{$constant}' não definida.",
+                    ]);
+                    exit;
                 }
             }
         }
@@ -230,7 +236,13 @@
                     if (strpos(haystack: $contentType, needle: 'application/json') !== false) {
                         $data = json_decode(json: $inputData, associative: true);
                         if (json_last_error() !== JSON_ERROR_NONE) {
-                            throw new Exception(message: "Erro ao decodificar JSON: " . json_last_error_msg());
+                            http_response_code(response_code: 500);
+                            header(header: "Content-Type: application/json, charset=utf-8");
+                            echo json_encode(value: [
+                                "success" => false,
+                                "message" => "Erro ao decodificar JSON: " . json_last_error_msg()
+                            ]);
+                            exit;
                         }
                     } else {
                         parse_str(string: $inputData, result: $data);
@@ -275,10 +287,23 @@
                             return false; // Middleware falhou, interrompe a execução
                         }
                     } else {
-                        throw new Exception(message: "Método {$method} não existe na classe {$middlewareClass}");
+                        // Método do middleware não encontrado
+                        http_response_code(response_code: 500);
+                        header(header: "Content-Type: application/json, charset=utf-8");
+                        echo json_encode(value: [
+                            "success" => false,
+                            "message" => "Método {$method} não existe na classe {$middlewareClass}"
+                        ]);
+                        exit;
                     }
                 } else {
-                    throw new Exception(message: "Formato inválido do middleware: {$middleware}");
+                    http_response_code(response_code: 500);
+                    header(header: "Content-Type: application/json, charset=utf-8");
+                    echo json_encode(value: [
+                        "success" => false,
+                        "message" =>  "Formato inválido do middleware: {$middleware}"
+                    ]);
+                    exit;
                 }
             }
         
@@ -376,11 +401,22 @@
                     $controller = new $route['controller']();
                     $action = $route['action'];
                     $params = self::prepareMethodParameters(method: $method, params: [$requestData]);
-        
-                    if (method_exists(object_or_class: $controller, method: $action)) {
-                        http_response_code(response_code: 200);
-                        call_user_func_array(callback: [$controller, $action], args: $params);
-                        exit;
+
+                    switch (ROUTER_MODE) {
+                        case 'view':
+                        case 'VIEW':
+                            if (method_exists(object_or_class: $controller, method: $action)) {
+                                http_response_code(response_code: 200);
+                                call_user_func_array(callback: [$controller, $action], args: $params);
+                                exit;
+                            }
+                        break;
+
+                        case 'json':
+                        case 'JSON':
+                            http_response_code(response_code: 200);
+                            header(header: 'Content-Type: application/json, charset=utf-8');
+                        break;
                     }
                 }
             }
@@ -400,28 +436,42 @@
          * @return void
          */
         private static function pageNotFound(): void {
-            http_response_code(response_code: 404);
-
-
-            switch (ROUTER_ERROR_404_MODE) {
+            switch (ROUTER_MODE) {
                 case 'view':
-                    http_response_code(response_code: 404);
-                    if(defined(constant_name: 'ERROR_404_VIEW_PATH')) {
-                        if(file_exists(filename: ERROR_404_VIEW_PATH)) {
-                            require_once ERROR_404_VIEW_PATH;
-                        } else {
-                            throw new Exception(message: "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.");
-                        }
+                case 'VIEW':
+                    // Notifica erro em caso constante não definida
+                    if(!defined(constant_name: 'ERROR_404_VIEW_PATH')) {
+                        http_response_code(response_code: 500);
+                        header(header: 'Content-Type: application/json, charset=utf-8');
+                        echo json_encode( value: [
+                            "success" => false,
+                            "message" => "Constante 'ERROR_404_VIEW_PATH' não foi definida.",
+                        ]);
+                        exit;
                     }
+
+                    // Caso o arquivo da constante não exista, notifica erro
+                    if(!file_exists(filename: ERROR_404_VIEW_PATH)) {
+                        http_response_code(response_code: 500);
+                        header(header: 'Content-Type: application/json, charset=utf-8');
+                        echo json_encode( value: [
+                            "success" => false,
+                            "message" => "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.",
+                        ]);
+                        exit;
+                    }
+
+                    http_response_code(response_code: 404);
+                    require_once ERROR_404_VIEW_PATH;
                 break;
 
                 case 'json':
+                case 'JSON':
                     http_response_code(response_code: 404);
                     header(header: 'Content-Type: application/json, charset=utf-8');
                     echo json_encode( value: [
                         "success" => false,
                         "message" => "Página não encontrada.",
-                        "code" => 404
                     ]);
                 break;
             }
