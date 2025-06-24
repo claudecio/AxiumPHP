@@ -20,7 +20,28 @@
                     unset($form['url']);
                     break;
                 case INPUT_POST:
-                    $form = $filters !== null ? filter_input_array(type: INPUT_POST, options: $filters) : filter_input_array(type: INPUT_POST);
+                    $inputData = file_get_contents(filename: 'php://input');
+                    $data = [];
+
+                    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+                    if (strpos(haystack: $contentType, needle: 'application/json') !== false) {
+                        $data = json_decode(json: $inputData, associative: true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            http_response_code(response_code: 500);
+                            header(header: "Content-Type: application/json; charset=utf-8");
+                            echo json_encode(value: [
+                                "success" => false,
+                                "message" => "Erro ao decodificar JSON: " . json_last_error_msg()
+                            ]);
+                            exit;
+                        }
+
+                        unset($data['_method']);
+                        $form = $data;
+                    } else {
+                        $form = $filters !== null ? filter_input_array(type: INPUT_POST, options: $filters) : filter_input_array(type: INPUT_POST);
+                    }
                     break;
                 case INPUT_COOKIE:
                     $form = $filters !== null ? filter_input_array(type: INPUT_COOKIE, options: $filters) : filter_input_array(type: INPUT_COOKIE);
