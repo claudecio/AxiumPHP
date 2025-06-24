@@ -414,8 +414,12 @@
 
                         case 'json':
                         case 'JSON':
-                            http_response_code(response_code: 200);
-                            header(header: 'Content-Type: application/json, charset=utf-8');
+                            if (method_exists(object_or_class: $controller, method: $action)) {
+                                http_response_code(response_code: 200);
+                                header(header: 'Content-Type: application/json, charset=utf-8');
+                                call_user_func_array(callback: [$controller, $action], args: $params);
+                                exit;
+                            }
                         break;
                     }
                 }
