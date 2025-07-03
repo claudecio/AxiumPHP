@@ -7,6 +7,8 @@
         private $configFilePath;
         private $configData;
         private $startedModules = [];
+        private static array $loadedShortcuts = [];
+        private static array $loadedModules = [];
         private array $requiredConstants = [
             'MODULE_PATH',
         ];
@@ -116,6 +118,41 @@
         }
 
         /**
+         * Retorna os atalhos carregados para um slug de módulo específico.
+         *
+         * Este método estático permite acessar atalhos que foram previamente carregados
+         * e armazenados na propriedade estática `self::$loadedShortcuts`. Ele espera
+         * o slug (identificador amigável) de um módulo como entrada e retorna o array
+         * de atalhos associado a ele.
+         *
+         * @param string $moduleSlug O slug do módulo para o qual os atalhos devem ser retornados.
+         * @return array|null Um array contendo os atalhos para o módulo especificado, ou `null`
+         * se nenhum atalho tiver sido carregado para aquele slug.
+         */
+        public static function getShortcuts(string $moduleSlug): ?array {
+            if(isset(self::$loadedShortcuts[$moduleSlug]['shortcuts'])) {
+                return self::$loadedShortcuts[$moduleSlug]['shortcuts'];
+            }
+
+            return null;
+        }
+
+        /**
+         * Retorna os slugs dos módulos que foram carregados.
+         *
+         * Este método estático fornece acesso à lista de identificadores (slugs)
+         * de todos os módulos que foram previamente carregados e armazenados na
+         * propriedade estática `self::$loadedModules`. É útil para verificar
+         * quais módulos estão ativos ou disponíveis no contexto atual da aplicação.
+         *
+         * @return array|null Um array contendo os slugs dos módulos carregados, ou `null`
+         * se nenhum módulo tiver sido carregado ou se a propriedade estiver vazia.
+         */
+        public static function getSlugLoadedModules(): ?array {
+            return self::$loadedModules;
+        }
+
+        /**
          * Busca o nome real de uma subpasta dentro de um diretório base,
          * ignorando a diferença entre maiúsculas e minúsculas.
          *
@@ -201,10 +238,18 @@
                     if (file_exists(filename: $routesFile)) {
                         require_once $routesFile;
                     }
+
+                    // Procura arquivo com atalhos de rotas
+                    $shortcutsFile = MODULE_PATH . "/{$realModuleFolder}/{$realRoutesFolder}/shortcuts.json";
+                    if (file_exists(filename: $shortcutsFile)) {
+                        $shortcuts = json_decode(json: file_get_contents(filename: $shortcutsFile), associative: true);
+                        self::$loadedShortcuts[$moduleManifest["slug"]] = $shortcuts;
+                    }
                 }
 
                 // Marca como carregado
                 $this->startedModules[] = $moduleManifest["uuid"];
+                self::$loadedShortcuts[$moduleManifest["slug"]];
 
                 // Carrega dependências, se existirem
                 if (!empty($moduleManifest['dependencies'])) {
