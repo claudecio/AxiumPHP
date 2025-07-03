@@ -249,7 +249,7 @@
 
                 // Marca como carregado
                 $this->startedModules[] = $moduleManifest["uuid"];
-                self::$loadedShortcuts[$moduleManifest["slug"]];
+                self::$loadedModules[] = $moduleManifest["slug"];
 
                 // Carrega dependências, se existirem
                 if (!empty($moduleManifest['dependencies'])) {
