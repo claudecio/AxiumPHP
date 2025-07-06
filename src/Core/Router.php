@@ -30,7 +30,7 @@
             foreach ($this->requiredConstants as $constant) {
                 if (!defined(constant_name: $constant)) {
                     http_response_code(response_code: 500);
-                    header(header: "Content-Type: application/json, charset=utf-8");
+                    header(header: "Content-Type: application/json; charset=utf-8");
                     echo json_encode(value: [
                         "success" => false,
                         "message" => "Constante '{$constant}' não definida.",
@@ -48,7 +48,7 @@
          * para posterior processamento pelo roteador.
          *
          * @param string $method      O método HTTP da rota (ex: 'GET', 'POST', 'PUT', 'DELETE').
-         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos/:id').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos/:id').
          * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
          *                             que devem ser executados quando a rota for
          *                             corresponder (ex: ['UsuarioController', 'index']).
@@ -57,10 +57,10 @@
          *
          * @return void
          */
-        public static function addRoute(string $method, string $path, array $handler, array $middlewares = []): void {
+        private static function addRoute(string $method, string $uri, array $handler, array $middlewares = []): void {
             self::$routes[] = [
                 'method' => strtoupper(string: $method),
-                'path' => '/' . trim(string: self::$currentGroupPrefix . '/' . trim(string: $path, characters: '/'), characters: '/'),
+                'path' => '/' . trim(string: self::$currentGroupPrefix . '/' . trim(string: $uri, characters: '/'), characters: '/'),
                 'controller' => $handler[0],
                 'action' => $handler[1],
                 'middlewares' => array_merge(self::$currentGroupMiddlewares, $middlewares)
@@ -74,7 +74,7 @@
          * chama o método `addRoute` internamente, passando os parâmetros
          * fornecidos e o método 'GET'.
          *
-         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos').
          * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
          *                             que devem ser executados quando a rota for
          *                             corresponder (ex: ['UsuarioController', 'index']).
@@ -83,8 +83,8 @@
          *
          * @return void
          */
-        public static function GET(string $path, array $handler, array $middlewares = []): void {
-            self::addRoute(method: "GET", path: $path, handler: $handler, middlewares: $middlewares);
+        public static function GET(string $uri, array $handler, array $middlewares = []): void {
+            self::addRoute(method: "GET", uri: $uri, handler: $handler, middlewares: $middlewares);
         }
 
         /**
@@ -94,7 +94,7 @@
          * chama o método `addRoute` internamente, passando os parâmetros
          * fornecidos e o método 'POST'.
          *
-         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos').
          * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
          *                             que devem ser executados quando a rota for
          *                             corresponder (ex: ['UsuarioController', 'salvar']).
@@ -103,8 +103,8 @@
          *
          * @return void
          */
-        public static function POST(string $path, array $handler, array $middlewares = []): void {
-            self::addRoute(method: "POST", path: $path, handler: $handler, middlewares: $middlewares);
+        public static function POST(string $uri, array $handler, array $middlewares = []): void {
+            self::addRoute(method: "POST", uri: $uri, handler: $handler, middlewares: $middlewares);
         }
 
         /**
@@ -114,7 +114,7 @@
          * chama o método `addRoute` internamente, passando os parâmetros
          * fornecidos e o método 'PUT'.
          *
-         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos').
          * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
          *                             que devem ser executados quando a rota for
          *                             corresponder (ex: ['UsuarioController', 'salvar']).
@@ -123,8 +123,8 @@
          *
          * @return void
          */
-        public static function PUT(string $path, array $handler, array $middlewares = []): void {
-            self::addRoute(method: "PUT", path: $path, handler: $handler, middlewares: $middlewares);
+        public static function PUT(string $uri, array $handler, array $middlewares = []): void {
+            self::addRoute(method: "PUT", uri: $uri, handler: $handler, middlewares: $middlewares);
         }
 
         /**
@@ -134,7 +134,7 @@
          * chama o método `addRoute` internamente, passando os parâmetros
          * fornecidos e o método 'DELETE'.
          *
-         * @param string $path        O caminho da rota (ex: '/usuarios', '/produtos').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos').
          * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
          *                             que devem ser executados quando a rota for
          *                             corresponder (ex: ['UsuarioController', 'salvar']).
@@ -143,8 +143,8 @@
          *
          * @return void
          */
-        public static function DELETE(string $path, array $handler, array $middlewares = []): void {
-            self::addRoute(method: "DELETE", path: $path, handler: $handler, middlewares: $middlewares);
+        public static function DELETE(string $uri, array $handler, array $middlewares = []): void {
+            self::addRoute(method: "DELETE", uri: $uri, handler: $handler, middlewares: $middlewares);
         }
 
         /**
@@ -209,7 +209,7 @@
             self::$currentGroupPrefix = $previousPrefix . $prefix;
             self::$currentGroupMiddlewares = array_merge($previousMiddlewares, $middlewares);
     
-            call_user_func($callback);
+            call_user_func(callback: $callback);
     
             self::$currentGroupPrefix = $previousPrefix;
             self::$currentGroupMiddlewares = $previousMiddlewares;
@@ -226,7 +226,7 @@
          *               vazio se não houver dados ou se a requisição não for PUT.
          * @throws Exception Se houver um erro ao decodificar JSON.
          */
-        private static function processPutDeleteRequest(string $method): array {
+        private static function extractRequestData(string $method): array {
             $inputData = file_get_contents(filename: 'php://input');
             $data = [];
         
@@ -237,7 +237,7 @@
                         $data = json_decode(json: $inputData, associative: true);
                         if (json_last_error() !== JSON_ERROR_NONE) {
                             http_response_code(response_code: 500);
-                            header(header: "Content-Type: application/json, charset=utf-8");
+                            header(header: "Content-Type: application/json; charset=utf-8");
                             echo json_encode(value: [
                                 "success" => false,
                                 "message" => "Erro ao decodificar JSON: " . json_last_error_msg()
@@ -289,7 +289,7 @@
                     } else {
                         // Método do middleware não encontrado
                         http_response_code(response_code: 500);
-                        header(header: "Content-Type: application/json, charset=utf-8");
+                        header(header: "Content-Type: application/json; charset=utf-8");
                         echo json_encode(value: [
                             "success" => false,
                             "message" => "Método {$method} não existe na classe {$middlewareClass}"
@@ -298,7 +298,7 @@
                     }
                 } else {
                     http_response_code(response_code: 500);
-                    header(header: "Content-Type: application/json, charset=utf-8");
+                    header(header: "Content-Type: application/json; charset=utf-8");
                     echo json_encode(value: [
                         "success" => false,
                         "message" =>  "Formato inválido do middleware: {$middleware}"
@@ -317,19 +317,19 @@
          * aos da rota fornecida.
          *
          * @param string $method O método HTTP da requisição.
-         * @param string $path O caminho da requisição.
+         * @param string $uri O caminho da requisição.
          * @param array $route Um array associativo contendo os dados da rota.
          *
          * @return bool Retorna true se a rota corresponder, false caso contrário.
          */
-        private static function matchRoute(string $method, string $path, array $route) {
+        private static function matchRoute(string $method, string $uri, array $route) {
             // Verifica se o método HTTP da rota corresponde ao da requisição
             if ($route['method'] !== $method) {
                 return false;
             }
         
             // Verifica se o caminho da requisição corresponde ao caminho da rota
-            return self::matchPath(routePath: $route['path'], requestPath: $path);
+            return self::matchPath(routePath: $route['path'], requestPath: $uri);
         }
 
         /**
@@ -374,8 +374,8 @@
          */
         public static function dispatch():  void {
             $method = $_SERVER['REQUEST_METHOD'];
-            $path = parse_url(url: $_SERVER['REQUEST_URI'], component: PHP_URL_PATH);
-            $path = trim(string: rtrim(string: $path, characters: '/'), characters: '/');
+            $uri = parse_url(url: $_SERVER['REQUEST_URI'], component: PHP_URL_PATH);
+            $uri = trim(string: rtrim(string: $uri, characters: '/'), characters: '/');
         
             // Verifica se o método HTTP é POST e se existe o campo '_method' no corpo da requisição
             if ($method === 'POST' && isset($_POST['_method'])) {
@@ -384,15 +384,15 @@
         
             // Processa os dados de PUT e DELETE
             $requestData = match($method) {
-                'PUT' => self::processPutDeleteRequest(method: $method),
-                'DELETE' => self::processPutDeleteRequest(method: $method),
+                'PUT' => self::extractRequestData(method: $method),
+                'DELETE' => self::extractRequestData(method: $method),
                 default => null
             };
         
             // Loop unificado para processar as rotas
             foreach (self::$routes as $route) {
                 // Verifica se a rota corresponde
-                if (self::matchRoute(method: $method, path: $path, route: $route)) {
+                if (self::matchRoute(method: $method, uri: $uri, route: $route)) {
                     // Executa os middlewares se houver
                     if (!empty($route['middlewares']) && !self::runMiddlewares(middlewares: $route['middlewares'])) {
                         return; // Middleware falhou, interrompe a execução
@@ -416,7 +416,7 @@
                         case 'JSON':
                             if (method_exists(object_or_class: $controller, method: $action)) {
                                 http_response_code(response_code: 200);
-                                header(header: 'Content-Type: application/json, charset=utf-8');
+                                header(header: 'Content-Type: application/json; charset=utf-8');
                                 call_user_func_array(callback: [$controller, $action], args: $params);
                                 exit;
                             }
@@ -446,7 +446,7 @@
                     // Notifica erro em caso constante não definida
                     if(!defined(constant_name: 'ERROR_404_VIEW_PATH')) {
                         http_response_code(response_code: 500);
-                        header(header: 'Content-Type: application/json, charset=utf-8');
+                        header(header: 'Content-Type: application/json; charset=utf-8');
                         echo json_encode( value: [
                             "success" => false,
                             "message" => "Constante 'ERROR_404_VIEW_PATH' não foi definida.",
@@ -457,7 +457,7 @@
                     // Caso o arquivo da constante não exista, notifica erro
                     if(!file_exists(filename: ERROR_404_VIEW_PATH)) {
                         http_response_code(response_code: 500);
-                        header(header: 'Content-Type: application/json, charset=utf-8');
+                        header(header: 'Content-Type: application/json; charset=utf-8');
                         echo json_encode( value: [
                             "success" => false,
                             "message" => "Arquivo da constante 'ERROR_404_VIEW_PATH' não foi encontrado.",
@@ -472,7 +472,7 @@
                 case 'json':
                 case 'JSON':
                     http_response_code(response_code: 404);
-                    header(header: 'Content-Type: application/json, charset=utf-8');
+                    header(header: 'Content-Type: application/json; charset=utf-8');
                     echo json_encode( value: [
                         "success" => false,
                         "message" => "Página não encontrada.",
