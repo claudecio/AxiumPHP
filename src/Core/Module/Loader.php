@@ -12,6 +12,8 @@
         private array $requiredConstants = [
             'MODULE_PATH',
         ];
+        private $modulePath = MODULE_PATH;
+        private $iniSystemPath = INI_SYSTEM_PATH;
 
         /**
          * Construtor da classe.
@@ -21,7 +23,7 @@
          * @param string $configFileName O caminho do arquivo de configuração (opcional).
          */
         public function __construct(?string $configFileName = "system-ini.json") {
-            $this->configFilePath = INI_SYSTEM_PATH . "/{$configFileName}";
+            $this->configFilePath = "{$this->iniSystemPath}/{$configFileName}";
             $this->loadConfig();
             // Verificar as constantes no momento da criação da instância
             $this->checkRequiredConstants();
@@ -175,7 +177,7 @@
         
             $entries = scandir(directory: $basePath);
             foreach ($entries as $entry) {
-                if (strcasecmp(string1: $entry, string2: $targetName) === 0 && is_dir(filename: $basePath . '/' . $entry)) {
+                if (strcasecmp(string1: $entry, string2: $targetName) === 0 && is_dir(filename: "{$basePath}/{$entry}")) {
                     return $entry; // Nome com o case real
                 }
             }
@@ -205,13 +207,13 @@
                 [$moduleName, $version] = explode(separator: '@', string: $module);
         
                 // Pega o nome real da pasta do módulo
-                $realModuleFolder = $this->getRealFolderName(basePath: MODULE_PATH, targetName: $moduleName);
+                $realModuleFolder = $this->getRealFolderName(basePath: $this->modulePath, targetName: $moduleName);
                 if (!$realModuleFolder) {
                     throw new Exception(message: "Pasta do módulo '{$moduleName}' não encontrada.");
                 }
         
                 // Caminho do manifesto usando o nome real
-                $manifestPath = MODULE_PATH . "/{$realModuleFolder}/manifest.json";
+                $manifestPath = "{$this->modulePath}/{$realModuleFolder}/manifest.json";
                 if (!file_exists(filename: $manifestPath)) {
                     throw new Exception(message: "Manifesto do módulo '{$moduleName}' não encontrado.");
                 }
@@ -232,15 +234,15 @@
                 }
                 
                 // Procura a pasta Routes com o case correto
-                $realRoutesFolder = $this->getRealFolderName(basePath: MODULE_PATH . "/{$realModuleFolder}", targetName: 'Routes');
+                $realRoutesFolder = $this->getRealFolderName(basePath: "{$this->modulePath}/{$realModuleFolder}", targetName: 'Routes');
                 if ($realRoutesFolder) {
-                    $routesFile = MODULE_PATH . "/{$realModuleFolder}/{$realRoutesFolder}/Routes.php";
+                    $routesFile = "{$this->modulePath}/{$realModuleFolder}/{$realRoutesFolder}/Routes.php";
                     if (file_exists(filename: $routesFile)) {
                         require_once $routesFile;
                     }
 
                     // Procura arquivo com atalhos de rotas
-                    $shortcutsFile = MODULE_PATH . "/{$realModuleFolder}/{$realRoutesFolder}/shortcuts.json";
+                    $shortcutsFile = "{$this->modulePath}/{$realModuleFolder}/{$realRoutesFolder}/shortcuts.json";
                     if (file_exists(filename: $shortcutsFile)) {
                         $shortcuts = json_decode(json: file_get_contents(filename: $shortcutsFile), associative: true);
                         self::$loadedShortcuts[$moduleManifest["slug"]] = $shortcuts;
