@@ -75,6 +75,33 @@
         }
 
         /**
+         * Prepara e formata os resultados de uma consulta paginada.
+         *
+         * Este método estático organiza os dados de uma resposta de banco de dados,
+         * juntamente com informações de paginação, em um formato padronizado.
+         * Ele é útil para enviar dados para a camada de visualização (frontend)
+         * de forma consistente.
+         *
+         * @param mixed $atuallPage O número da página atual. Pode ser um `int` ou `string`.
+         * @param array $dbResponse Um array contendo os resultados da consulta ao banco de dados para a página atual.
+         * @param string $totalResults O número total de resultados encontrados pela consulta, antes da aplicação do limite de paginação. Deve ser uma `string` (será convertido para `float`).
+         * @param mixed $limit O limite de resultados por página. Pode ser um `int` ou `string` (padrão é "10").
+         * @return array Um array associativo contendo:
+         * - `atuallPage`: A página atual.
+         * - `response`: Os dados da resposta do banco de dados para a página.
+         * - `totalResults`: O total de resultados, convertido para `float`.
+         * - `limit`: O limite de resultados por página.
+         */
+        public static function preparePaginationResult(mixed $atuallPage, array $dbResponse, string $totalResults, mixed $limit = "10"): array {
+            return [
+                'atuallPage' => $atuallPage,
+                'response' => $dbResponse,
+                'totalResults' => floatval(value: $totalResults),
+                'limit' => $limit
+            ];
+        }
+
+        /**
          * Gera HTML para um componente de paginação.
          *
          * Este método estático recebe a página atual, o total de registros e um limite
