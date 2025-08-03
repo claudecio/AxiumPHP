@@ -6,11 +6,10 @@
     class Router {
         private static $routes = [];
         private static $params = [];    
+        private static $ROUTER_MODE = null;
         private static $currentGroupPrefix = '';
         private static $currentGroupMiddlewares = [];
-        private array $requiredConstants = [
-            'ROUTER_MODE'
-        ];
+        private array $requiredConstants = ['ROUTER_MODE'];
 
         /**
          * Construtor que vai garantir que as constantes necessárias estejam definidas antes de
@@ -18,7 +17,23 @@
          */
         public function __construct() {
             // Verificar as constantes no momento da criação da instância
-            $this->checkRequiredConstants();
+            $this->checkRequiredConstant();
+
+            // Define constante
+            self::$ROUTER_MODE = strtoupper(string: ROUTER_MODE);
+        }
+
+        /**
+         * Retorna o modo de roteamento atual.
+         *
+         * Este método estático simplesmente retorna o valor da propriedade estática `self::$ROUTER_MODE`.
+         * Ele é usado para obter o modo de operação do roteador, que pode indicar se está
+         * em modo de desenvolvimento, produção ou outro modo configurado.
+         *
+         * @return string O modo de roteamento como uma string.
+         */
+        public static function getMode(): string {
+            return (string) self::$ROUTER_MODE;
         }
 
         /**
@@ -26,7 +41,7 @@
          *
          * @throws Exception Se alguma constante necessária não estiver definida.
          */
-        private function checkRequiredConstants(): void {
+        private function checkRequiredConstant(): void {
             foreach ($this->requiredConstants as $constant) {
                 if (!defined(constant_name: $constant)) {
                     http_response_code(response_code: 500);
@@ -38,33 +53,6 @@
                     exit;
                 }
             }
-        }
-
-        /**
-         * Adiciona uma rota à lista de rotas da aplicação.
-         *
-         * Este método estático armazena informações sobre uma rota (método HTTP,
-         * caminho, controlador, ação e middlewares) em um array interno `$routes`
-         * para posterior processamento pelo roteador.
-         *
-         * @param string $method      O método HTTP da rota (ex: 'GET', 'POST', 'PUT', 'DELETE').
-         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos/:id').
-         * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
-         *                             que devem ser executados quando a rota for
-         *                             corresponder (ex: ['UsuarioController', 'index']).
-         * @param array  $middlewares Um array opcional contendo os nomes dos middlewares que
-         *                             devem ser executados antes do handler da rota.
-         *
-         * @return void
-         */
-        private static function addRoute(string $method, string $uri, array $handler, array $middlewares = []): void {
-            self::$routes[] = [
-                'method' => strtoupper(string: $method),
-                'path' => '/' . trim(string: self::$currentGroupPrefix . '/' . trim(string: $uri, characters: '/'), characters: '/'),
-                'controller' => $handler[0],
-                'action' => $handler[1],
-                'middlewares' => array_merge(self::$currentGroupMiddlewares, $middlewares)
-            ];
         }
 
         /**
@@ -148,6 +136,33 @@
         }
 
         /**
+         * Adiciona uma rota à lista de rotas da aplicação.
+         *
+         * Este método estático armazena informações sobre uma rota (método HTTP,
+         * caminho, controlador, ação e middlewares) em um array interno `$routes`
+         * para posterior processamento pelo roteador.
+         *
+         * @param string $method      O método HTTP da rota (ex: 'GET', 'POST', 'PUT', 'DELETE').
+         * @param string $uri        O caminho da rota (ex: '/usuarios', '/produtos/:id').
+         * @param array  $handler     Um array contendo o nome do controlador e o nome da ação
+         *                             que devem ser executados quando a rota for
+         *                             corresponder (ex: ['UsuarioController', 'index']).
+         * @param array  $middlewares Um array opcional contendo os nomes dos middlewares que
+         *                             devem ser executados antes do handler da rota.
+         *
+         * @return void
+         */
+        private static function addRoute(string $method, string $uri, array $handler, array $middlewares = []): void {
+            self::$routes[] = [
+                'method' => strtoupper(string: $method),
+                'path' => '/' . trim(string: self::$currentGroupPrefix . '/' . trim(string: $uri, characters: '/'), characters: '/'),
+                'controller' => $handler[0],
+                'action' => $handler[1],
+                'middlewares' => array_merge(self::$currentGroupMiddlewares, $middlewares)
+            ];
+        }
+
+        /**
          * Verifica se um caminho de rota corresponde a um caminho de requisição.
          *
          * Este método estático compara um caminho de rota definido (ex: '/usuarios/:id')
@@ -216,41 +231,68 @@
         }
 
         /**
-         * Processa dados de requisição PUT.
+         * Extrai os dados do corpo da requisição HTTP.
          *
-         * Este método estático lê os dados da requisição PUT do `php://input`,
-         * decodifica-os (JSON ou form-urlencoded) e retorna os dados em um array
-         * associativo.
+         * Este método estático é responsável por analisar e retornar os dados enviados
+         * no corpo de uma requisição HTTP, especialmente para métodos como `PUT` e `DELETE`,
+         * onde os dados não são automaticamente populados em superglobais como `$_POST` ou `$_GET`.
          *
-         * @return array Os dados da requisição PUT processados. Retorna um array
-         *               vazio se não houver dados ou se a requisição não for PUT.
-         * @throws Exception Se houver um erro ao decodificar JSON.
+         * O fluxo de extração é o seguinte:
+         * 1.  **Lê o Corpo da Requisição:** `file_get_contents('php://input')` lê o conteúdo bruto do corpo da requisição HTTP.
+         * 2.  **Processamento Condicional:**
+         * * **Para métodos `PUT` ou `DELETE`:**
+         * * Verifica se o corpo da requisição (`$inputData`) não está vazio.
+         * * **Verifica o `Content-Type`:**
+         * * Se o `Content-Type` for `application/json`, tenta decodificar o corpo da requisição como JSON.
+         * * Se houver um erro na decodificação JSON, ele define o código de status HTTP para 500,
+         * envia uma resposta JSON com uma mensagem de erro e encerra a execução.
+         * * Se o `Content-Type` não for `application/json` (ou não estiver definido), tenta analisar o corpo da requisição
+         * como uma string de query URL (`parse_str`), o que é comum para `application/x-www-form-urlencoded`
+         * em requisições `PUT`/`DELETE`.
+         * * **Para outros métodos (e.g., `POST`, `GET`):** O método não tenta extrair dados do `php://input`.
+         * Nesses casos, presume-se que os dados já estariam disponíveis em `$_POST`, `$_GET`, etc.
+         * 3.  **Limpeza Final:** Remove a chave `_method` dos dados, se presente. Essa chave é frequentemente
+         * usada em formulários HTML para simular métodos `PUT` ou `DELETE` através de um campo oculto.
+         *
+         * @param string $method O método HTTP da requisição (e.g., 'GET', 'POST', 'PUT', 'DELETE').
+         * @return array Um array associativo contendo os dados extraídos do corpo da requisição.
+         * Em caso de erro de decodificação JSON, a execução é encerrada com uma resposta de erro HTTP.
          */
         private static function extractRequestData(string $method): array {
             $inputData = file_get_contents(filename: 'php://input');
             $data = [];
-        
-            if ($method === 'PUT' || $method === 'DELETE') {
-                if (!empty($inputData)) {
-                    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-                    if (strpos(haystack: $contentType, needle: 'application/json') !== false) {
-                        $data = json_decode(json: $inputData, associative: true);
-                        if (json_last_error() !== JSON_ERROR_NONE) {
-                            http_response_code(response_code: 500);
-                            header(header: "Content-Type: application/json; charset=utf-8");
-                            echo json_encode(value: [
-                                "success" => false,
-                                "message" => "Erro ao decodificar JSON: " . json_last_error_msg()
-                            ]);
-                            exit;
-                        }
-                    } else {
-                        parse_str(string: $inputData, result: $data);
+
+            // Só processa se for PUT ou DELETE e tiver dados no corpo
+            if (in_array(needle: $method, haystack: ['PUT', 'DELETE']) && !empty($inputData)) {
+                $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+                // Se for JSON
+                if (str_contains(haystack: $contentType, needle: 'application/json')) {
+                    $data = json_decode(json: $inputData, associative: true);
+
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        http_response_code(response_code: 500);
+                        header(header: "Content-Type: application/json; charset=utf-8");
+                        $json_error = json_last_error_msg();
+                        
+                        echo json_encode(value: [
+                            "success" => false,
+                            "message" => "Erro ao decodificar JSON: {$json_error}"
+                        ]);
+                        exit;
                     }
+                } 
+                // Se for outro tipo (ex: x-www-form-urlencoded)
+                else {
+                    parse_str(string: $inputData, result: $data);
                 }
             }
 
-            unset($data['_method']);
+            // Remove o _method se tiver
+            if(isset($data['_method'])) {
+                unset($data['_method']);
+            }
+
             return $data;
         }
 
@@ -292,7 +334,7 @@
                         header(header: "Content-Type: application/json; charset=utf-8");
                         echo json_encode(value: [
                             "success" => false,
-                            "message" => "Método {$method} não existe na classe {$middlewareClass}"
+                            "message" => "Método '{$method}' não existe na classe '{$middlewareClass}'"
                         ]);
                         exit;
                     }
@@ -301,7 +343,7 @@
                     header(header: "Content-Type: application/json; charset=utf-8");
                     echo json_encode(value: [
                         "success" => false,
-                        "message" =>  "Formato inválido do middleware: {$middleware}"
+                        "message" =>  "Formato inválido do middleware: '{$middleware}'"
                     ]);
                     exit;
                 }
@@ -402,8 +444,7 @@
                     $action = $route['action'];
                     $params = self::prepareMethodParameters(method: $method, params: [$requestData]);
 
-                    switch (ROUTER_MODE) {
-                        case 'view':
+                    switch (self::$ROUTER_MODE) {
                         case 'VIEW':
                             if (method_exists(object_or_class: $controller, method: $action)) {
                                 http_response_code(response_code: 200);
@@ -412,7 +453,6 @@
                             }
                         break;
 
-                        case 'json':
                         case 'JSON':
                             if (method_exists(object_or_class: $controller, method: $action)) {
                                 http_response_code(response_code: 200);
@@ -440,8 +480,7 @@
          * @return void
          */
         private static function pageNotFound(): void {
-            switch (ROUTER_MODE) {
-                case 'view':
+            switch (self::$ROUTER_MODE) {
                 case 'VIEW':
                     // Notifica erro em caso constante não definida
                     if(!defined(constant_name: 'ERROR_404_VIEW_PATH')) {
@@ -469,7 +508,6 @@
                     require_once ERROR_404_VIEW_PATH;
                 break;
 
-                case 'json':
                 case 'JSON':
                     http_response_code(response_code: 404);
                     header(header: 'Content-Type: application/json; charset=utf-8');
