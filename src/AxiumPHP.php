@@ -7,6 +7,7 @@
     
         private array $requiredConstants = [
             'INI_SYSTEM_PATH',
+            'STORAGE_FOLDER_PATH'
         ];
     
         /**
