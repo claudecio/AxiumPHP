@@ -2,7 +2,7 @@
     namespace AxiumPHP\Core;
 
     use Throwable;
-    use AxiumPHP\Services\LoggerService;
+    use AxiumPHP\Core\LoggerService;
 
     class ErrorHandler {
         private LoggerService $logger;

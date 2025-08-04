@@ -1,5 +1,5 @@
 <?php
-    namespace AxiumPHP\Services;
+    namespace AxiumPHP\Core;
 
     use PDO;
     use DateTime;
