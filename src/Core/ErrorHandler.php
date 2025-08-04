@@ -8,13 +8,13 @@
         private LoggerService $logger;
         private bool $displayErrors;
 
-        public function __construct(bool $displayErrors = false) {
+        public function __construct(bool $displayErrors = false, ?string $logDir = null) {
             $this->displayErrors = $displayErrors;
-            $this->logger = new LoggerService(LoggerService::DRIVER_FILE); // troca pra DATABASE depois se quiser
+            $this->logger = new LoggerService(driver: LoggerService::DRIVER_FILE, logDir: $logDir); // troca pra DATABASE depois se quiser
 
-            set_error_handler([$this, 'handleError']);
-            set_exception_handler([$this, 'handleException']);
-            register_shutdown_function([$this, 'handleShutdown']);
+            set_error_handler(callback: [$this, 'handleError']);
+            set_exception_handler(callback: [$this, 'handleException']);
+            register_shutdown_function(callback: [$this, 'handleShutdown']);
         }
 
         public function handleError(int $errno, string $errstr, string $errfile, int $errline): bool {
