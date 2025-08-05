@@ -2,7 +2,22 @@
     namespace AxiumPHP\Helpers;
 
     class NavigationHelper {
-        private const MAX_STACK = 5;
+        private static $max_stack;
+
+        /**
+         * Construtor da classe que define a profundidade máxima da pilha.
+         *
+         * Este método inicializa a classe e configura a propriedade estática `self::$max_stack`
+         * com o valor fornecido por `$max_stack`. Essa propriedade provavelmente
+         * controla o número máximo de itens ou operações que podem ser armazenados em uma pilha.
+         * O valor padrão é 5.
+         *
+         * @param int $max_stack O número máximo de itens permitidos na pilha. O valor padrão é 5.
+         * @return void
+         */
+        public function __construct(int $max_stack = 5) {
+            self::$max_stack = $max_stack;
+        }
 
         /**
          * Rastreia a navegação do usuário, mantendo um histórico das páginas visitadas
@@ -17,7 +32,7 @@
          *
          * Para evitar duplicatas, verifica se a URI atual é diferente da última URI
          * registrada na pilha de navegação. Se for diferente, e se a pilha atingir
-         * um tamanho máximo definido por `self::MAX_STACK`, a URI mais antiga é removida
+         * um tamanho máximo definido por `self::$max_stack`, a URI mais antiga é removida
          * do início da pilha. A URI atual é então adicionada ao final da pilha.
          *
          * A URI atual também é armazenada na variável de sessão 'current_page', e a
@@ -43,7 +58,7 @@
             // Evita duplicar a última página
             $last = end($_SESSION['navigation_stack']);
             if ($last !== $currentUri) {
-                if (count(value: $_SESSION['navigation_stack']) >= self::MAX_STACK) {
+                if (count(value: $_SESSION['navigation_stack']) >= self::$max_stack) {
                     array_shift($_SESSION['navigation_stack']);
                 }
 
