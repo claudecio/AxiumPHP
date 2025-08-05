@@ -2,25 +2,22 @@
     namespace AxiumPHP\Core;
 
     use Throwable;
-    use AxiumPHP\Core\LoggerService;
 
     class ErrorHandler {
-        private LoggerService $logger;
         private bool $displayErrors;
 
-        public function __construct(bool $displayErrors = false, ?string $logDir = null) {
+        public function __construct(bool $displayErrors = false) {
             $this->displayErrors = $displayErrors;
-            $this->logger = new LoggerService(driver: LoggerService::DRIVER_FILE, logDir: $logDir); // troca pra DATABASE depois se quiser
 
-            set_error_handler(callback: [$this, 'handleError']);
-            set_exception_handler(callback: [$this, 'handleException']);
-            register_shutdown_function(callback: [$this, 'handleShutdown']);
+            set_error_handler([$this, 'handleError']);
+            set_exception_handler([$this, 'handleException']);
+            register_shutdown_function([$this, 'handleShutdown']);
         }
 
         public function handleError(int $errno, string $errstr, string $errfile, int $errline): bool {
             $msg = "Erro [$errno]: $errstr em $errfile na linha $errline";
 
-            $this->logger->error($msg, [
+            LoggerService::error($msg, [
                 'file' => $errfile,
                 'line' => $errline,
                 'code' => $errno
@@ -36,7 +33,7 @@
         public function handleException(Throwable $exception): void {
             $msg = "Exceção: {$exception->getMessage()} em {$exception->getFile()} na linha {$exception->getLine()}";
 
-            $this->logger->error($msg, [
+            LoggerService::error($msg, [
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
                 'trace' => $exception->getTraceAsString(),
@@ -62,7 +59,7 @@
             if ($error !== null) {
                 $msg = "Fatal error: {$error['message']} em {$error['file']} na linha {$error['line']}";
 
-                $this->logger->error($msg, [
+                LoggerService::error($msg, [
                     'file' => $error['file'],
                     'line' => $error['line'],
                     'type' => $error['type']
